@@ -1,0 +1,205 @@
+{
+  "product": "pocgate",
+  "version": "0.1.0",
+  "captured_at": "2026-11-06T22:46:33+00:00",
+  "command": "pocgate demo",
+  "environment": {
+    "os": "darwin",
+    "arch": "arm64",
+    "go": "go1.24.1",
+    "recorder": "vhs 0.12.1"
+  },
+  "elapsed_seconds": 9.4,
+  "oracles_per_case": 3,
+  "runs_per_side": 3,
+  "poc_executions": 36,
+  "regression_executions": 6,
+  "cases": [
+    {
+      "patch": "good patch",
+      "verdict": "CLOSED",
+      "exit_code": 0,
+      "oracles": [
+        {
+          "id": "authbypass",
+          "pre_fired": 3,
+          "post_fired": 0,
+          "runs_per_side": 3
+        },
+        {
+          "id": "traversal",
+          "pre_fired": 3,
+          "post_fired": 0,
+          "runs_per_side": 3
+        },
+        {
+          "id": "ssrf",
+          "pre_fired": 3,
+          "post_fired": 0,
+          "runs_per_side": 3
+        }
+      ],
+      "regression": {
+        "parser": "exit_code",
+        "new_failures": [],
+        "new_failure_count": 0
+      }
+    },
+    {
+      "patch": "partial patch",
+      "verdict": "STILL_VULNERABLE",
+      "exit_code": 1,
+      "oracles": [
+        {
+          "id": "authbypass",
+          "pre_fired": 3,
+          "post_fired": 3,
+          "runs_per_side": 3
+        },
+        {
+          "id": "traversal",
+          "pre_fired": 3,
+          "post_fired": 0,
+          "runs_per_side": 3
+        },
+        {
+          "id": "ssrf",
+          "pre_fired": 3,
+          "post_fired": 0,
+          "runs_per_side": 3
+        }
+      ],
+      "regression": {
+        "parser": "exit_code",
+        "new_failures": [],
+        "new_failure_count": 0
+      }
+    },
+    {
+      "patch": "regression patch",
+      "verdict": "REGRESSION_BROKEN",
+      "exit_code": 2,
+      "oracles": [
+        {
+          "id": "authbypass",
+          "pre_fired": 3,
+          "post_fired": 0,
+          "runs_per_side": 3
+        },
+        {
+          "id": "traversal",
+          "pre_fired": 3,
+          "post_fired": 0,
+          "runs_per_side": 3
+        },
+        {
+          "id": "ssrf",
+          "pre_fired": 3,
+          "post_fired": 0,
+          "runs_per_side": 3
+        }
+      ],
+      "regression": {
+        "parser": "exit_code",
+        "new_failures": [
+          "exit:1"
+        ],
+        "new_failure_count": 1
+      }
+    }
+  ],
+  "evidence": {
+    "file": ".pocgate/evidence/latest.json",
+    "sha256_digest": "f397ce755b6816671940dff5f69970f07ed103d357b67f4bad264ad9d2f21aa6",
+    "verdict": "CLOSED",
+    "public_key": "LCG9yfl+WIj+OGQ/j9ltv/1Hyry29CCpu5GxRBAmY4I=",
+    "target": {
+      "name": "shop",
+      "patch_sha256": "14594f1e1c4fd7a4e72f8b6f401720528119e67827641ac08d4ea40f40e052c9",
+      "pre_tree_sha256": "7304244b3389896a32ff5d5fd4add290253992f8436b1328d97b0f6e1940552e",
+      "post_tree_sha256": "8c4c29599764710961996dfd8a47b2c3f2dc1ced2eaf528a44ac30e8e06d2e4a",
+      "build_cmd": "go build -o shop main.go"
+    },
+    "labels": {
+      "cve": "CVE-2026-00000"
+    },
+    "oracles": [
+      {
+        "id": "authbypass",
+        "poc_sha256": "031f18514575d59ef60194e76675fd8e6ca5c20accdb0d92a64b3fcf2633fab7",
+        "repeats": 3,
+        "pre": {
+          "fired": 3,
+          "exit": 0,
+          "stdout_sha": "c32a82fdc952778637c6641b6d3208e17144f3ac037fadf877825c9d2ff31582",
+          "duration_ms": 175
+        },
+        "post": {
+          "fired": 0,
+          "exit": 1,
+          "stdout_sha": "f757134e61b72abdc600f5ac69661981af296fa417eeb1ceeb1cdda2f2465659",
+          "duration_ms": 142
+        }
+      },
+      {
+        "id": "traversal",
+        "poc_sha256": "367760b60dc3b9a1a44f7f6eb3f0aa49a612483fd183f040208d85aca80fa386",
+        "repeats": 3,
+        "pre": {
+          "fired": 3,
+          "exit": 0,
+          "stdout_sha": "2298a8f4719bec8d35c5698d267ccd8386dce1e1db116ff66f6de490f90b08c4",
+          "duration_ms": 166
+        },
+        "post": {
+          "fired": 0,
+          "exit": 1,
+          "stdout_sha": "0468c821d8a708a31ff603751f39eb0f44686d17ff7e77dc28e5596cd1f1447b",
+          "duration_ms": 154
+        }
+      },
+      {
+        "id": "ssrf",
+        "poc_sha256": "33d4b9161d5d5e380e18f12c182a61a3cb9b6a16fdd24f91b842aeef8ade3935",
+        "repeats": 3,
+        "pre": {
+          "fired": 3,
+          "exit": 0,
+          "stdout_sha": "e902e3cb5f0c1904a895702b9dbdd2c8584d4cc25d8f2257ec5535a93ee7090e",
+          "duration_ms": 171
+        },
+        "post": {
+          "fired": 0,
+          "exit": 1,
+          "stdout_sha": "f5163d8651b37662f15f30544a7dbbacc48693e0451800132afe8fc3fc8941dc",
+          "duration_ms": 161
+        }
+      }
+    ],
+    "regression": {
+      "cmd": "go test main.go *_test.go",
+      "parser": "exit_code",
+      "pre": {
+        "total": 1,
+        "failed_ids": []
+      },
+      "post": {
+        "total": 1,
+        "failed_ids": []
+      },
+      "new_failures": []
+    },
+    "env": {
+      "pocgate_version": "0.1.0",
+      "os": "darwin",
+      "runtime_probe": {
+        "go": "go1.24.1"
+      },
+      "started_at": "2026-11-06T22:46:35Z",
+      "ended_at": "2026-11-06T22:46:38Z"
+    },
+    "verify_command": "pocgate attest verify --pubkey .pocgate/evidence/latest.json.pub .pocgate/evidence/latest.json",
+    "verify_result": "OK"
+  },
+  "terminal_output": "pocgate demo: shop fixture with three synthetic flaws\n  target: /var/folders/y6/1gqlrpy15xx2k5l_cksbsfd80000gn/T/pocgate-demo-3363666191/shop\n\n== vulnerable build (baseline) ==\nauthbypass: FIRED 3/3 (exit 0, 200ms) — baseline captured\ntraversal: FIRED 3/3 (exit 0, 200ms) — baseline captured\nssrf: FIRED 3/3 (exit 0, 200ms) — baseline captured\n\n== good patch ==\n  authbypass   pre FIRED 3/3  →  post FIRED 0/3\n  traversal    pre FIRED 3/3  →  post FIRED 0/3\n  ssrf         pre FIRED 3/3  →  post FIRED 0/3\n  regression: exit_code, new failures: 0\n  verdict: CLOSED (exit 0)\n\n== partial patch ==\n  authbypass   pre FIRED 3/3  →  post FIRED 3/3\n  traversal    pre FIRED 3/3  →  post FIRED 0/3\n  ssrf         pre FIRED 3/3  →  post FIRED 0/3\n  regression: exit_code, new failures: 0\n  verdict: STILL_VULNERABLE (exit 1)\n\n== regression patch ==\n  authbypass   pre FIRED 3/3  →  post FIRED 0/3\n  traversal    pre FIRED 3/3  →  post FIRED 0/3\n  ssrf         pre FIRED 3/3  →  post FIRED 0/3\n  regression: exit_code, new failures: 1\n    new: exit:1\n  verdict: REGRESSION_BROKEN (exit 2)\n\n== evidence ==\n  file:    .pocgate/evidence/latest.json\n  digest:  f397ce755b6816671940dff5f69970f07ed103d357b67f4bad264ad9d2f21aa6\n  verify:  pocgate attest verify --pubkey .pocgate/evidence/latest.json.pub .pocgate/evidence/latest.json\n\ndemo: CLOSED in 9.4s\n"
+}

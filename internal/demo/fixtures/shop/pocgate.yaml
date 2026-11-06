@@ -1,0 +1,41 @@
+# The bundled shop fixture: a small HTTP service with three independent flaws.
+# Each PoC exits 0 when the flaw reproduces (FIRED) and 1 when the service gave
+# a definite, non-vulnerable response (SILENT). Any other exit is UNOBSERVED and
+# can never support a closure: that is why every oracle declares silent_exit.
+target:
+  name: shop
+  # The fixture is one dependency-free package and deliberately carries no
+  # go.mod, so this command behaves the same in the repository and in the
+  # scratch copy pocgate builds before applying a patch.
+  build: go build -o shop main.go
+  service:
+    # The fixture server must listen on this port; the PoCs probe it there.
+    cmd: ./shop
+    port: 18081
+    ready_timeout_sec: 20
+oracles:
+  - id: authbypass
+    poc: pocs/authbypass.sh
+    repeats: 3
+    fired_when:
+      exit: 0
+      silent_exit: 1
+  - id: traversal
+    poc: pocs/traversal.sh
+    repeats: 3
+    fired_when:
+      exit: 0
+      silent_exit: 1
+  - id: ssrf
+    poc: pocs/ssrf.sh
+    repeats: 3
+    fired_when:
+      exit: 0
+      silent_exit: 1
+regression:
+  # Explicit files keep the same command working without a module; the glob
+  # also picks up any test a patch adds.
+  cmd: go test main.go *_test.go
+  parser: exit_code
+labels:
+  cve: CVE-2026-00000

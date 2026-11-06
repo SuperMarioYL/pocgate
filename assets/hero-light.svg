@@ -1,0 +1,143 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 330" width="1000" height="330" role="img" aria-labelledby="title desc">
+  <title id="title">pocgate — a patch is not a fix until the exploit stops firing</title>
+  <desc id="desc">pocgate runs three proof-of-concept scripts against the vulnerable build and again after the patch. Each PoC must fire three times before the patch and stay silent three times after it, with no new regression failure. Only then does the gate say CLOSED and sign an evidence file whose sha256 digest and ed25519 signature can be recomputed offline on another machine.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#f7fafd"/>
+      <stop offset="1" stop-color="#eaf1f8"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0.18" cy="0.2" r="0.75">
+      <stop offset="0" stop-color="#0b7d72" stop-opacity="0.30"/>
+      <stop offset="1" stop-color="#0b7d72" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="glow2" cx="0.82" cy="0.72" r="0.6">
+      <stop offset="0" stop-color="#3b57c4" stop-opacity="0.30"/>
+      <stop offset="1" stop-color="#3b57c4" stop-opacity="0"/>
+    </radialGradient>
+    <pattern id="grid" width="32" height="32" patternUnits="userSpaceOnUse">
+      <path d="M32 0H0V32" fill="none" stroke="#b8cadb" stroke-width="1" opacity="0.35"/>
+    </pattern>
+    <filter id="soft" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur stdDeviation="7"/>
+    </filter>
+  <style>
+    .spark { animation: twinkle 4.8s ease-in-out infinite; }
+    .spark:nth-of-type(3n) { animation-duration: 6.2s; animation-delay: -1.4s; }
+    .spark:nth-of-type(3n+1) { animation-duration: 5.4s; animation-delay: -2.6s; }
+    .ring { animation: ring 3.6s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
+    .flow { animation: flow 2.6s linear infinite; }
+    .flow.b { animation-delay: -0.5s; }
+    .flow.c { animation-delay: -1s; }
+    .fire { animation: fire 3.2s ease-in-out infinite; }
+    .fire.b { animation-delay: -0.9s; }
+    .fire.c { animation-delay: -1.8s; }
+    .closed { animation: closed 3.6s ease-in-out infinite; }
+    @keyframes twinkle { 0%, 100% { opacity: 0.18; } 50% { opacity: 0.62; } }
+    @keyframes ring { 0%, 100% { opacity: 0.18; transform: scale(0.94); } 50% { opacity: 0.5; transform: scale(1.06); } }
+    @keyframes flow { 0% { transform: translate(0, 0); opacity: 0; }
+                       18% { opacity: 1; }
+                       82% { opacity: 1; }
+                       100% { transform: translate(60px, var(--dy)); opacity: 0; } }
+    @keyframes fire { 0%, 100% { opacity: 0.10; } 50% { opacity: 0.26; } }
+    @keyframes closed { 0%, 100% { opacity: 0.12; } 50% { opacity: 0.30; } }
+    @media (prefers-reduced-motion: reduce) {
+      .spark, .ring, .flow, .fire, .closed { animation: none !important; }
+      .flow { opacity: 0.9; }
+    }
+  </style>
+  </defs>
+
+  <rect width="1000" height="330" fill="url(#bg)"/>
+  <rect width="1000" height="330" fill="url(#grid)"/>
+  <ellipse cx="200" cy="80" rx="330" ry="200" fill="url(#glow)"/>
+  <ellipse cx="820" cy="250" rx="280" ry="170" fill="url(#glow2)"/>
+  <circle class="spark" cx="78" cy="120" r="1.6" fill="#0b7d72" opacity="0.3"/>
+  <circle class="spark" cx="120" cy="260" r="1.2" fill="#0b7d72" opacity="0.3"/>
+  <circle class="spark" cx="168" cy="96" r="1.1" fill="#0b7d72" opacity="0.3"/>
+  <circle class="spark" cx="232" cy="288" r="1.5" fill="#0b7d72" opacity="0.3"/>
+  <circle class="spark" cx="286" cy="132" r="1.0" fill="#0b7d72" opacity="0.3"/>
+  <circle class="spark" cx="330" cy="236" r="1.3" fill="#0b7d72" opacity="0.3"/>
+  <circle class="spark" cx="392" cy="96" r="1.2" fill="#0b7d72" opacity="0.3"/>
+  <circle class="spark" cx="410" cy="178" r="1.6" fill="#0b7d72" opacity="0.3"/>
+  <circle class="spark" cx="96" cy="196" r="1.0" fill="#0b7d72" opacity="0.3"/>
+  <circle class="spark" cx="208" cy="168" r="1.1" fill="#0b7d72" opacity="0.3"/>
+  <circle class="spark" cx="262" cy="78" r="1.4" fill="#0b7d72" opacity="0.3"/>
+  <circle class="spark" cx="352" cy="300" r="1.1" fill="#0b7d72" opacity="0.3"/>
+  <circle class="spark" cx="470" cy="84" r="1.0" fill="#0b7d72" opacity="0.3"/>
+  <circle class="spark" cx="498" cy="262" r="1.2" fill="#0b7d72" opacity="0.3"/>
+  <circle class="spark" cx="700" cy="74" r="1.1" fill="#0b7d72" opacity="0.3"/>
+  <circle class="spark" cx="742" cy="214" r="1.3" fill="#0b7d72" opacity="0.3"/>
+  <circle class="spark" cx="812" cy="236" r="1.0" fill="#0b7d72" opacity="0.3"/>
+  <circle class="spark" cx="890" cy="72" r="1.2" fill="#0b7d72" opacity="0.3"/>
+  <circle class="spark" cx="612" cy="246" r="1.1" fill="#0b7d72" opacity="0.3"/>
+  <circle class="spark" cx="930" cy="178" r="1.4" fill="#0b7d72" opacity="0.3"/>
+  <g fill="none" stroke="#0b7d72" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+    <rect x="48" y="40" width="40" height="40" rx="11" opacity="0.55"/>
+    <path d="M62 50v20M78 50v20"/>
+    <path d="M67 55l6 5-6 5" stroke="#9a5b06"/>
+  </g>
+  <text x="102" y="72" font-family="'SF Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="38" font-weight="700" letter-spacing="0.5" fill="#0a1a29">pocgate</text>
+
+  <text x="48" y="140" font-family="'Helvetica Neue', ui-sans-serif, -apple-system, 'Segoe UI', Arial, sans-serif" font-size="25" font-weight="600" fill="#0a1a29">A patch is not a fix</text>
+  <text x="48" y="172" font-family="'Helvetica Neue', ui-sans-serif, -apple-system, 'Segoe UI', Arial, sans-serif" font-size="25" font-weight="600" fill="#0b7d72">until the exploit goes quiet.</text>
+  <text x="48" y="206" font-family="'Helvetica Neue', ui-sans-serif, -apple-system, 'Segoe UI', Arial, sans-serif" font-size="13" fill="#5a7189">every PoC fires on every run before the patch and stays</text>
+  <text x="48" y="224" font-family="'Helvetica Neue', ui-sans-serif, -apple-system, 'Segoe UI', Arial, sans-serif" font-size="13" fill="#5a7189">silent on every run after it. A new regression failure is</text>
+  <text x="48" y="242" font-family="'Helvetica Neue', ui-sans-serif, -apple-system, 'Segoe UI', Arial, sans-serif" font-size="13" fill="#5a7189">REGRESSION_BROKEN; an unreadable run is INCONCLUSIVE.</text>
+  <g>
+    <rect x="48" y="266" width="132" height="26" rx="13" fill="#0b7d72" opacity="0.10"/>
+    <rect x="48" y="266" width="132" height="26" rx="13" fill="none" stroke="#0b7d72" stroke-width="1" opacity="0.45"/>
+    <text x="114.0" y="283" text-anchor="middle" font-family="'Helvetica Neue', ui-sans-serif, -apple-system, 'Segoe UI', Arial, sans-serif" font-size="12" fill="#0b7d72">single binary</text>
+  </g>
+  <g>
+    <rect x="188" y="266" width="96" height="26" rx="13" fill="#0b7d72" opacity="0.10"/>
+    <rect x="188" y="266" width="96" height="26" rx="13" fill="none" stroke="#0b7d72" stroke-width="1" opacity="0.45"/>
+    <text x="236.0" y="283" text-anchor="middle" font-family="'Helvetica Neue', ui-sans-serif, -apple-system, 'Segoe UI', Arial, sans-serif" font-size="12" fill="#0b7d72">no daemon</text>
+  </g>
+  <g>
+    <rect x="292" y="266" width="156" height="26" rx="13" fill="#0b7d72" opacity="0.10"/>
+    <rect x="292" y="266" width="156" height="26" rx="13" fill="none" stroke="#0b7d72" stroke-width="1" opacity="0.45"/>
+    <text x="370.0" y="283" text-anchor="middle" font-family="'Helvetica Neue', ui-sans-serif, -apple-system, 'Segoe UI', Arial, sans-serif" font-size="12" fill="#0b7d72">offline attestation</text>
+  </g>
+  <g>
+    <rect x="456" y="28" width="496" height="274" rx="16" fill="#ffffff" fill-opacity="1" stroke="#d3e0ec" stroke-width="1.2"/>
+    <text x="474" y="54" font-family="'SF Mono', ui-monospace, SFMono-Regular, Menlo, monospace" font-size="11" letter-spacing="1.8" fill="#5a7189">ONE GATE RUN</text>
+    <line x1="474" y1="186" x2="934" y2="186" stroke="#d3e0ec" stroke-width="1"/>
+    <circle cx="478" cy="88" r="3" fill="#b81f39"/>
+    <text x="490" y="92" font-family="'SF Mono', ui-monospace, SFMono-Regular, Menlo, monospace" font-size="14" fill="#0a1a29">authbypass</text>
+    <rect class="fire" x="580" y="77" width="90" height="22" rx="11" fill="#b81f39" opacity="0.12"/>
+    <rect x="580" y="77" width="90" height="22" rx="11" fill="none" stroke="#b81f39" stroke-width="1" opacity="0.5"/>
+    <text x="625" y="92" text-anchor="middle" font-family="'SF Mono', ui-monospace, SFMono-Regular, Menlo, monospace" font-size="11.5" fill="#b81f39">FIRED 3/3</text>
+    <line x1="674" y1="88" x2="732" y2="120" stroke="#0b7d72" stroke-width="1" opacity="0.35"/>
+    <circle class="flow a" style="--dy: 32px" cx="674" cy="88" r="2.4" fill="#0b7d72"/>
+    <circle cx="478" cy="120" r="3" fill="#b81f39"/>
+    <text x="490" y="124" font-family="'SF Mono', ui-monospace, SFMono-Regular, Menlo, monospace" font-size="14" fill="#0a1a29">traversal</text>
+    <rect class="fire" x="580" y="109" width="90" height="22" rx="11" fill="#b81f39" opacity="0.12"/>
+    <rect x="580" y="109" width="90" height="22" rx="11" fill="none" stroke="#b81f39" stroke-width="1" opacity="0.5"/>
+    <text x="625" y="124" text-anchor="middle" font-family="'SF Mono', ui-monospace, SFMono-Regular, Menlo, monospace" font-size="11.5" fill="#b81f39">FIRED 3/3</text>
+    <line x1="674" y1="120" x2="732" y2="120" stroke="#0b7d72" stroke-width="1" opacity="0.35"/>
+    <circle class="flow b" style="--dy: 0px" cx="674" cy="120" r="2.4" fill="#0b7d72"/>
+    <circle cx="478" cy="152" r="3" fill="#b81f39"/>
+    <text x="490" y="156" font-family="'SF Mono', ui-monospace, SFMono-Regular, Menlo, monospace" font-size="14" fill="#0a1a29">ssrf</text>
+    <rect class="fire" x="580" y="141" width="90" height="22" rx="11" fill="#b81f39" opacity="0.12"/>
+    <rect x="580" y="141" width="90" height="22" rx="11" fill="none" stroke="#b81f39" stroke-width="1" opacity="0.5"/>
+    <text x="625" y="156" text-anchor="middle" font-family="'SF Mono', ui-monospace, SFMono-Regular, Menlo, monospace" font-size="11.5" fill="#b81f39">FIRED 3/3</text>
+    <line x1="674" y1="152" x2="732" y2="120" stroke="#0b7d72" stroke-width="1" opacity="0.35"/>
+    <circle class="flow c" style="--dy: -32px" cx="674" cy="152" r="2.4" fill="#0b7d72"/>
+    <circle class="ring" cx="762" cy="120" r="34" fill="none" stroke="#0b7d72" stroke-width="1.4" opacity="0.3"/>
+    <path d="M790 120 776 144.2 748 144.2 734 120 748 95.8 776 95.8Z" fill="#0b7d72" fill-opacity="0.12" stroke="#0b7d72" stroke-width="1.6"/>
+    <path d="M750 120l8 8 16-18" fill="none" stroke="#0b7d72" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
+    <text x="762" y="172" text-anchor="middle" font-family="'SF Mono', ui-monospace, SFMono-Regular, Menlo, monospace" font-size="11" fill="#5a7189">three legs</text>
+
+    <rect class="closed" x="806" y="105" width="112" height="30" rx="15" fill="#0f7a4a" opacity="0.14"/>
+    <rect x="806" y="105" width="112" height="30" rx="15" fill="none" stroke="#0f7a4a" stroke-width="1.2" opacity="0.6"/>
+    <text x="862" y="125" text-anchor="middle" font-family="'SF Mono', ui-monospace, SFMono-Regular, Menlo, monospace" font-size="13.5" font-weight="700" fill="#0f7a4a">CLOSED</text>
+    <text x="862" y="162" text-anchor="middle" font-family="'Helvetica Neue', ui-sans-serif, -apple-system, 'Segoe UI', Arial, sans-serif" font-size="11.5" fill="#5a7189">exit 0</text>
+
+    <text x="474" y="214" font-family="'SF Mono', ui-monospace, SFMono-Regular, Menlo, monospace" font-size="14.5" fill="#0b7d72">evidence.json</text>
+    <text x="474" y="236" font-family="'SF Mono', ui-monospace, SFMono-Regular, Menlo, monospace" font-size="11.5" fill="#5a7189">canonical JSON · sha256 digest · ed25519 signature</text>
+    <text x="474" y="256" font-family="'Helvetica Neue', ui-sans-serif, -apple-system, 'Segoe UI', Arial, sans-serif" font-size="11.5" fill="#5a7189">recomputed offline on another machine</text>
+    <rect x="796" y="198" width="138" height="26" rx="13" fill="#0f7a4a" opacity="0.12"/>
+    <rect x="796" y="198" width="138" height="26" rx="13" fill="none" stroke="#0f7a4a" stroke-width="1" opacity="0.5"/>
+    <text x="865" y="215" text-anchor="middle" font-family="'SF Mono', ui-monospace, SFMono-Regular, Menlo, monospace" font-size="11.5" fill="#0f7a4a">attest verify: OK</text>
+  </g>
+</svg>
