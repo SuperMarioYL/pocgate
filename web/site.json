@@ -1,0 +1,457 @@
+{
+  "schema": 3,
+  "name": "pocgate",
+  "github": "https://github.com/SuperMarioYL/pocgate",
+  "host": "pocgate.lei6393.com",
+  "palette": "auto",
+  "lang": {
+    "primary": "zh",
+    "toggle": true
+  },
+  "hero": {
+    "eyebrow": {
+      "zh": "pocgate · 补丁闭合门禁 · 四态判定 · 离线可复算证据",
+      "en": "pocgate · closure gate for agent-written patches · four verdicts · offline evidence"
+    },
+    "headline": {
+      "zh": "补丁只是候选，\nCLOSED 才算修好。",
+      "en": "A patch is a candidate.\nOnly CLOSED is a fix."
+    },
+    "sub": {
+      "zh": "pocgate 用一次可复算的测量回答「这个补丁到底修没修好」：补丁前每个 PoC 每次都要触发，补丁后在临时副本里每次都要按声明的 silent_exit 沉默，回归失败集不能新增。三段同时成立才判 CLOSED，并签出一份换台机器、断网也能重算的 evidence.json。单二进制，无守护进程，无数据库，不联网。",
+      "en": "pocgate answers \"is this fix actually a fix?\" with a repeatable measurement: every PoC must fire on every run before the patch, every PoC must go silent at its declared silent_exit after it, and the regression failure set must not grow. All three legs hold, or it is not CLOSED. The run ends in a signed evidence.json that another machine can recompute offline. One binary, no daemon, no database, no network."
+    },
+    "href": "#quickstart",
+    "cta": {
+      "zh": "跑一遍自带靶场",
+      "en": "Run the bundled demo"
+    },
+    "ctaGithub": {
+      "zh": "在 GitHub 查看",
+      "en": "View on GitHub"
+    }
+  },
+  "advantages": [
+    {
+      "title": {
+        "zh": "三段合取，少一段就不是 CLOSED",
+        "en": "A conjunction of three legs, not one silence"
+      },
+      "body": {
+        "zh": "补丁前每个 PoC 都要在 repeats 次里全部触发，补丁后每个 PoC 的每一次都要是声明的 silent_exit，回归失败集不能新增任何条目。只报「补丁后不触发」的工具无法区分「漏洞修好了」和「PoC 打了空气」。",
+        "en": "Every PoC fires on every one of its repeats before the patch; every PoC exits with its declared silent_exit on every run after it; the regression failure set gains nothing. A tool that only reports \"the PoC no longer fires\" cannot tell a fix from a PoC that never hit."
+      },
+      "chips": [
+        "pre: FIRED repeats/repeats",
+        "post: SILENT every run",
+        "regression: no new failures"
+      ]
+    },
+    {
+      "title": {
+        "zh": "四态同时就是退出码",
+        "en": "Four verdicts, and they are the exit codes"
+      },
+      "body": {
+        "zh": "CLOSED 0、STILL_VULNERABLE 1、REGRESSION_BROKEN 2、INCONCLUSIVE 3。同一轮出现多个问题时按 STILL_VULNERABLE > REGRESSION_BROKEN > INCONCLUSIVE 报告；CLI 故障从 64 起，所以门禁脚本能分清「补丁有问题」和「工具没跑起来」。",
+        "en": "CLOSED is 0, STILL_VULNERABLE 1, REGRESSION_BROKEN 2, INCONCLUSIVE 3. When several things go wrong in one run the report order is STILL_VULNERABLE, then REGRESSION_BROKEN, then INCONCLUSIVE. CLI failures start at 64, so a gate script can separate a bad patch from a tool that never ran."
+      },
+      "chips": [
+        "0 / 1 / 2 / 3",
+        "STILL_VULNERABLE outranks",
+        "64 = usage error"
+      ]
+    },
+    {
+      "title": {
+        "zh": "证据换一台机器也能重算",
+        "en": "Evidence recomputes on another machine"
+      },
+      "body": {
+        "zh": "verify 写出规范 JSON、sha256 摘要与 ed25519 签名。attest verify --pubkey 离线重算摘要、验证签名，并检查文件是否逐字节等于规范形式——改一个字节就失败。不看时钟、不访问网络、不依赖服务端。",
+        "en": "verify writes canonical JSON with a sha256 digest and an ed25519 signature. attest verify --pubkey recomputes the digest, checks the signature, and confirms the file is byte-for-byte canonical: one changed byte fails. It reads no clock, opens no socket, and needs no server."
+      },
+      "chips": [
+        "canonical JSON + sha256",
+        "ed25519 signature",
+        "offline · exit 0/1"
+      ]
+    },
+    {
+      "title": {
+        "zh": "PoC 有三态，沉默必须被声明",
+        "en": "A PoC has three states; silence must be declared"
+      },
+      "body": {
+        "zh": "退出码等于 fired_when.exit 记 FIRED，等于 fired_when.silent_exit 记 SILENT，其它任何退出码——崩溃、500、超时、连不上——一律 UNOBSERVED，直接导致 INCONCLUSIVE。silent_exit 不声明就永远拿不到 CLOSED。",
+        "en": "An exit matching fired_when.exit is FIRED; an exit matching fired_when.silent_exit is SILENT; anything else — a crash, a 500, a timeout, a refused connection — is UNOBSERVED and forces INCONCLUSIVE. Without a declared silent_exit, CLOSED is unreachable."
+      },
+      "chips": [
+        "FIRED / SILENT / UNOBSERVED",
+        "silent_exit required",
+        "not curl -f"
+      ]
+    },
+    {
+      "title": {
+        "zh": "补丁只在临时副本里生效",
+        "en": "The patch only lands in a scratch copy"
+      },
+      "body": {
+        "zh": "verify 在 $TMPDIR 下的副本里应用补丁、重建、重跑，结束即删除；工作区除 .pocgate/ 之外不会被写。补丁改了 pocgate.yaml 或 PoC 文件会被拒；源码树摘要与 baseline 不一致也会判 INCONCLUSIVE。",
+        "en": "verify applies the patch, rebuilds and reruns inside a copy under $TMPDIR, then deletes it; nothing outside .pocgate/ is written in your workspace. A patch that touches pocgate.yaml or a PoC is rejected, and a source-tree digest that no longer matches the baseline yields INCONCLUSIVE."
+      },
+      "chips": [
+        "$TMPDIR scratch copy",
+        "writes only .pocgate/",
+        "tree digest checked"
+      ]
+    },
+    {
+      "title": {
+        "zh": "PoC 和回归都用你已有的",
+        "en": "Your own PoCs and your own regression suite"
+      },
+      "body": {
+        "zh": "oracle 是任意可执行脚本，没有执行位时用 sh 解释执行；regression 读命令的退出码，或从 stdout 读 junit_xml。verify --json 把单行证据打到 stdout，--fail-on 把四态收成 CI 的 0/1 门禁，不需要新的服务或适配器。",
+        "en": "An oracle is any executable script, interpreted with sh when it has no execute bit; regression reads a command's exit code, or junit_xml from its stdout. verify --json prints one line of evidence, and --fail-on turns the four verdicts into a CI 0/1 gate — no new service or adapter."
+      },
+      "chips": [
+        "any sh script",
+        "exit_code | junit_xml",
+        "--json · --fail-on"
+      ]
+    }
+  ],
+  "demo": {
+    "title": {
+      "zh": "一次录制的运行",
+      "en": "One recorded run"
+    },
+    "note": {
+      "zh": "在随包的合成靶场 shop 上录制：3 个 PoC、补丁前后各跑 3 次，共 36 次 PoC 执行与 6 次回归执行，整轮 9.4 秒（darwin/arm64，Go 1.24.1，vhs 0.12.1）。下面的命令与输出逐字来自 docs/demo-results.json；前四步展示同一轮 pocgate demo 输出里对应的那一段，最后一步是那次录制的 attest verify 结果。证据里的摘要与公钥属于那一次录制，每次运行的时间戳和密钥都不同，不能复现。",
+      "en": "Recorded on the bundled synthetic shop fixture: three PoCs, three runs per side, 36 PoC executions and six regression executions in 9.4 seconds (darwin/arm64, Go 1.24.1, vhs 0.12.1). The commands and output below are copied verbatim from docs/demo-results.json; the first four steps show their sections of the same run and the last is that recording's attest verify result. Its digests and public key belong to that recording; every run has a different timestamp and key, so they cannot be reproduced."
+    },
+    "source": "https://github.com/SuperMarioYL/pocgate/blob/main/docs/demo-results.json",
+    "steps": [
+      {
+        "label": {
+          "zh": "基线",
+          "en": "Baseline"
+        },
+        "body": {
+          "zh": "下图是同一轮运行的真实终端录制（vhs 0.12.1，没有剪辑）：先跑 pocgate demo，再跑 attest verify。靶场是一个 HTTP 小服务，三个互相独立的合成缺陷：/admin 不校验凭据、/file?path= 允许 ../ 逃出公开目录、/fetch?url= 能指向服务自己的内部端点。三个 PoC 在补丁前每次都触发，基线才被写盘。",
+          "en": "The GIF is the unedited terminal recording of that run (vhs 0.12.1): pocgate demo, then attest verify. The fixture is a small HTTP service with three independent synthetic flaws: /admin checks no credentials, /file?path= lets ../ escape the public directory, and /fetch?url= can point at the service's own internal endpoint. All three PoCs fire on every run, so the baseline is written."
+        },
+        "image": "/assets/demo.gif",
+        "command": "pocgate demo",
+        "output": "== vulnerable build (baseline) ==\nauthbypass: FIRED 3/3 (exit 0, 200ms) — baseline captured\ntraversal: FIRED 3/3 (exit 0, 200ms) — baseline captured\nssrf: FIRED 3/3 (exit 0, 200ms) — baseline captured"
+      },
+      {
+        "label": {
+          "zh": "好补丁 CLOSED",
+          "en": "Good patch"
+        },
+        "body": {
+          "zh": "套上真正修好的补丁后，三个 PoC 在临时副本里各跑 3 次，每次都是 silent_exit 声明的 1，回归没有新增失败。三段齐全，判定 CLOSED，退出码 0。",
+          "en": "With a patch that actually fixes all three flaws, each PoC runs three times in a scratch copy and exits with the declared silent_exit of 1 every time; the regression set gains nothing. All three legs hold: CLOSED, exit code 0."
+        },
+        "image": "/assets/demo-1-light.svg",
+        "imageDark": "/assets/demo-1-dark.svg",
+        "command": "pocgate demo",
+        "output": "== good patch ==\n  authbypass   pre FIRED 3/3  →  post FIRED 0/3\n  traversal    pre FIRED 3/3  →  post FIRED 0/3\n  ssrf         pre FIRED 3/3  →  post FIRED 0/3\n  regression: exit_code, new failures: 0\n  verdict: CLOSED (exit 0)"
+      },
+      {
+        "label": {
+          "zh": "只修一半",
+          "en": "Half fix"
+        },
+        "body": {
+          "zh": "这条补丁只修了目录遍历与 SSRF，/admin 照旧开放。authbypass 补丁后仍然 3/3 触发，另外两个已经安静——三段合取在第一段就断了，判定 STILL_VULNERABLE，退出码 1。",
+          "en": "This patch fixes the traversal and the SSRF but leaves /admin open. authbypass still fires 3/3 after the patch while the other two go quiet. The first leg of the conjunction breaks: STILL_VULNERABLE, exit code 1."
+        },
+        "image": "/assets/demo-2-light.svg",
+        "imageDark": "/assets/demo-2-dark.svg",
+        "command": "pocgate demo",
+        "output": "== partial patch ==\n  authbypass   pre FIRED 3/3  →  post FIRED 3/3\n  traversal    pre FIRED 3/3  →  post FIRED 0/3\n  ssrf         pre FIRED 3/3  →  post FIRED 0/3\n  regression: exit_code, new failures: 0\n  verdict: STILL_VULNERABLE (exit 1)"
+      },
+      {
+        "label": {
+          "zh": "弄坏回归",
+          "en": "Broke a test"
+        },
+        "body": {
+          "zh": "三条补丁都修对了，但顺手加了一个断言旧行为的测试。PoC 全绿、回归失败集新增 1 条 exit:1，第三段不成立，判定 REGRESSION_BROKEN，退出码 2。",
+          "en": "All three flaws are fixed, but the patch also adds a test that asserts the old behaviour. Every PoC is silent yet the regression set gains one exit:1, so the third leg fails: REGRESSION_BROKEN, exit code 2."
+        },
+        "image": "/assets/demo-3-light.svg",
+        "imageDark": "/assets/demo-3-dark.svg",
+        "command": "pocgate demo",
+        "output": "== regression patch ==\n  authbypass   pre FIRED 3/3  →  post FIRED 0/3\n  traversal    pre FIRED 3/3  →  post FIRED 0/3\n  ssrf         pre FIRED 3/3  →  post FIRED 0/3\n  regression: exit_code, new failures: 1\n    new: exit:1\n  verdict: REGRESSION_BROKEN (exit 2)"
+      },
+      {
+        "label": {
+          "zh": "复算证据",
+          "en": "Recompute"
+        },
+        "body": {
+          "zh": "demo 结束后写出 .pocgate/evidence/latest.json 与同名的 .pub，并打印复核命令。录制的复核结果是 OK：摘要重算一致、签名有效、文件逐字节等于规范形式。真正需要防篡改时，公钥要从另一条通道带过去——放在证据旁边的 .pub 只能证明文件之间自洽。",
+          "en": "The demo writes .pocgate/evidence/latest.json and its .pub, then prints the recompute command. The recorded result is OK: the digest recomputes, the signature verifies, and the file is byte-for-byte canonical. Against tampering, bring the public key over another channel; a .pub sitting beside the evidence only proves the files agree with each other."
+        },
+        "image": "/assets/demo-4-light.svg",
+        "imageDark": "/assets/demo-4-dark.svg",
+        "command": "pocgate attest verify --pubkey .pocgate/evidence/latest.json.pub .pocgate/evidence/latest.json",
+        "output": "OK"
+      }
+    ]
+  },
+  "quickstart": {
+    "title": {
+      "zh": "第一次跑通",
+      "en": "Your first run"
+    },
+    "body": {
+      "zh": "构建需要 Go 1.24+，只有一个依赖（gopkg.in/yaml.v3，版本锁在 go.mod / go.sum）。产出的二进制自带 Go 运行时，所以运行 pocgate 本身不需要 Go；但 pocgate demo 与 Go 目标的构建需要 go，所有 spec 命令经 sh 执行、补丁用 patch 应用、随包 PoC 用 curl。气隙机器上可以直接拷 release 的 linux/darwin × amd64/arm64 tarball，或 go mod vendor 后整目录带进去。",
+      "en": "Building needs Go 1.24+ and one dependency (gopkg.in/yaml.v3, pinned in go.mod and go.sum). The resulting binary carries its own Go runtime, so running pocgate needs no Go; the bundled demo and any Go target build do need go, every spec command goes through sh, patches are applied with patch, and the bundled PoCs use curl. For an air-gapped machine, copy the linux/darwin × amd64/arm64 release tarball, or vendor the module and bring the whole directory in."
+    },
+    "steps": [
+      {
+        "title": {
+          "zh": "构建并安装",
+          "en": "Build and install"
+        },
+        "code": "git clone https://github.com/SuperMarioYL/pocgate.git\ncd pocgate\ngo build -trimpath -ldflags \"-s -w\" -o pocgate ./cmd/pocgate\n# or scp the binary to the air-gapped host:\ninstall -m 0755 pocgate /usr/local/bin/pocgate"
+      },
+      {
+        "title": {
+          "zh": "先体检",
+          "en": "Check the environment"
+        },
+        "code": "pocgate doctor"
+      },
+      {
+        "title": {
+          "zh": "跑随包靶场（需要 go、sh、patch、curl）",
+          "en": "Run the bundled fixture (needs go, sh, patch, curl)"
+        },
+        "code": "pocgate demo"
+      },
+      {
+        "title": {
+          "zh": "换成你自己的目标",
+          "en": "Point it at your own target"
+        },
+        "code": "cd /path/to/your-service\npocgate init   # writes an annotated pocgate.yaml\n$EDITOR pocgate.yaml   # target / oracles / regression / labels\npocgate baseline   # every PoC must fire 3/3"
+      },
+      {
+        "title": {
+          "zh": "在单独的 worktree 导出补丁",
+          "en": "Export the patch from a separate worktree"
+        },
+        "code": "git -C /path/to/agent-fix diff > /tmp/fix.diff   # git-style, a/ b/ prefixes\n# keep the target tree at baseline; if already changed: git stash"
+      },
+      {
+        "title": {
+          "zh": "在临时副本里验证",
+          "en": "Verify in a scratch copy"
+        },
+        "code": "pocgate verify --patch /tmp/fix.diff   # the exit code is the verdict: 0 / 1 / 2 / 3"
+      },
+      {
+        "title": {
+          "zh": "换一台机器复算证据",
+          "en": "Recompute the evidence on another machine"
+        },
+        "code": "pocgate attest verify --pubkey /secure/signer.pub \\\n  .pocgate/evidence/latest.json"
+      },
+      {
+        "title": {
+          "zh": "接进 CI",
+          "en": "Wire it into CI"
+        },
+        "code": "pocgate verify --patch fix.diff --json --fail-on REGRESSION_BROKEN"
+      }
+    ]
+  },
+  "scene": {
+    "kind": "neon-graph",
+    "fallback": "/assets/scene-dark.svg",
+    "fallbackLight": "/assets/scene-light.svg",
+    "caption": {
+      "zh": "首屏是示意粒子图：三个 PoC 在漏洞构建上各自打红，补丁后在临时副本里转静，回归保持干净，最后汇成一份签名的 evidence.json，交给另一台机器复算。真实计数与录制输出在下面的 Demo 里。",
+      "en": "An illustrative particle graph: three PoCs fire against the vulnerable build, go quiet in a scratch copy after the patch, leave the regression set untouched, and converge into one signed evidence.json that another machine recomputes. Exact counts and recorded output are in the demo below."
+    }
+  },
+  "story": {
+    "intro": {
+      "title": {
+        "zh": "「补丁之后 PoC 不触发」\n单独证明不了任何事",
+        "en": "\"The PoC no longer fires\"\nproves nothing on its own"
+      },
+      "body": {
+        "zh": "这句话至少有三种成立方式，而漏洞仍然在：PoC 本来就没打中；构建其实挂了；三次里只中一次，或者补丁前根本没跑满。它们在流水线上长得一模一样——都只有一句「没触发」。pocgate 的处理方式是把结论拆成必须同时成立的三段，并要求补丁前就打出确定性：补丁前没有每次触发，直接判 INCONCLUSIVE，拒绝继续。",
+        "en": "That sentence can be true in at least three ways while the vulnerability remains: the PoC never hit; the build was broken; one run in three fired, or the pre-patch side never ran its full count. On a pipeline they look identical — one line saying the PoC stayed quiet. pocgate splits the conclusion into three legs that must all hold, and it demands certainty before the patch: if the PoC did not fire on every pre-patch run, the verdict is INCONCLUSIVE and the gate stops there."
+      }
+    },
+    "sections": [
+      {
+        "title": {
+          "zh": "沉默有三种，只有一种叫修好",
+          "en": "Three kinds of silence, one of which is a fix"
+        },
+        "body": {
+          "zh": "入口选错、缺前置状态、用 curl -f 把 401 吃成非零退出，PoC 会安静但从未证明过什么；服务没起来、端口连不上、返回 500，同样安静；跑三次只中一次，结论也不成立。pocgate 把补丁前的每次触发当作硬前提，把补丁后的每次沉默按声明的 silent_exit 记账，其它退出码记 UNOBSERVED。三态观察、三段合取、四态判定：任何一段观察不到，结论就停在 INCONCLUSIVE，而不是悄悄变成「已修复」。",
+          "en": "A wrong entry point, a missing precondition, or curl -f turning a 401 into a non-zero exit makes a PoC quiet without proving anything. A service that never started, a port that refuses connections, a 500 response — equally quiet. One hit in three runs proves nothing either. pocgate makes every pre-patch firing a hard precondition, books every post-patch silence only against the declared silent_exit, and marks anything else UNOBSERVED. Three-state observation, three-leg conjunction, four-state verdict: when a leg cannot be observed the conclusion stops at INCONCLUSIVE instead of quietly becoming \"fixed\"."
+        },
+        "image": {
+          "light": "/assets/why-light.svg",
+          "dark": "/assets/why-dark.svg",
+          "alt": {
+            "zh": "同一句「补丁后不触发」分成三种情况：PoC 没打中、构建挂了、结果抖动；只有声明了 silent_exit 且每次沉默、回归无新增的那一种能进入三段合取",
+            "en": "One sentence, three worlds: the PoC never hit, the build was broken, or the result was flaky. Only the lane with a declared silent_exit on every run, plus an unchanged regression set, can enter the three-leg conjunction"
+          },
+          "mobile": {
+            "light": "/assets/why-mobile-light.svg",
+            "dark": "/assets/why-mobile-dark.svg"
+          }
+        }
+      },
+      {
+        "title": {
+          "zh": "一个二进制，一条进程边界",
+          "en": "One binary, one process boundary"
+        },
+        "body": {
+          "zh": "cmd/pocgate 只做命令分发；internal/spec 是 pocgate.yaml 的唯一 schema 所有者，未知字段直接让 spec 加载失败；internal/exec 是唯一接触进程的模块——构建、起服务、等 TCP 就绪、按进程组停掉、记退出码与 stdout 摘要，oracle 与 regress 都经它执行，所以超时、进程组清理和输出截断只有一份实现。internal/evidence 负责规范化 JSON、sha256 与 ed25519。磁盘上只有三处：baseline.json、evidence/latest.json 与其 .pub、本机 0600 的私钥；没有服务端。",
+          "en": "cmd/pocgate only dispatches commands. internal/spec is the single owner of the pocgate.yaml schema, and an unknown field fails the load instead of silently disabling a check. internal/exec is the only module that touches processes — build, start the service, wait for TCP, stop the process group, record exit codes and a stdout digest — and both oracle and regress run through it, so timeouts, group cleanup and output truncation exist once. internal/evidence owns canonical JSON, sha256 and ed25519. Disk holds three things: baseline.json, evidence/latest.json with its .pub, and a local 0600 private key. There is no server."
+        },
+        "image": {
+          "light": "/assets/architecture-light.svg",
+          "dark": "/assets/architecture-dark.svg",
+          "alt": {
+            "zh": "pocgate 架构：CLI 下分 spec、exec、oracle、regress、verdict、evidence、demo 七个模块，exec 是唯一接触进程的边界，证据与基线落在 .pocgate/，私钥留在本机",
+            "en": "pocgate architecture: the CLI sits above spec, exec, oracle, regress, verdict, evidence and demo; exec is the single process boundary; baseline and evidence land under .pocgate/ while the private key stays local"
+          },
+          "mobile": {
+            "light": "/assets/architecture-mobile-light.svg",
+            "dark": "/assets/architecture-mobile-dark.svg"
+          }
+        }
+      },
+      {
+        "title": {
+          "zh": "PoC、回归和证据都接得进现有流水线",
+          "en": "PoCs, regression and evidence fit the pipeline you have"
+        },
+        "body": {
+          "zh": "oracle 是任意可执行脚本，没有执行位时用 sh 解释执行；仓库自带的三个 PoC 读 HTTP 状态码再分派退出码，可以直接当模板抄。regression 支持 exit_code，或从命令 stdout 读 junit_xml。verify --json 把单行规范证据打到 stdout，--fail-on 把四态收成 CI 的 0/1 门禁。证据交给 attest verify，可以在另一台机器、断网的测评环境里复算；打 v* 标签时 release 工作流产出 linux/darwin × amd64/arm64 的 tarball，整个工具不调模型、不写补丁、不生成 PoC。",
+          "en": "An oracle is any executable script, interpreted with sh when it has no execute bit; the three bundled PoCs read the HTTP status code and dispatch on it, so they work as templates. regression accepts exit_code, or junit_xml read from the command's stdout. verify --json prints one line of canonical evidence to stdout, and --fail-on collapses the four verdicts into a CI 0/1 gate. Evidence goes to attest verify and recomputes on another machine, offline, in an assessment environment; pushing a v* tag makes the release workflow emit linux/darwin × amd64/arm64 tarballs. The tool calls no model, writes no patch and generates no PoC."
+        },
+        "image": {
+          "light": "/assets/integrations-light.svg",
+          "dark": "/assets/integrations-dark.svg",
+          "alt": {
+            "zh": "集成面：pocgate.yaml 的 target、oracles、regression、labels 四个块，sh 写的 PoC，CI 的 --json 与 --fail-on，以及交给另一台机器的 attest verify",
+            "en": "Integration surface: the target, oracles, regression and labels blocks of pocgate.yaml, sh PoCs, CI through --json and --fail-on, and attest verify on another machine"
+          },
+          "mobile": {
+            "light": "/assets/integrations-mobile-light.svg",
+            "dark": "/assets/integrations-mobile-dark.svg"
+          }
+        }
+      }
+    ],
+    "details": [
+      {
+        "title": {
+          "zh": "判定规则：三段合取",
+          "en": "The rule: a three-leg conjunction"
+        },
+        "body": {
+          "zh": "repeats 默认 3，补丁前后各跑满。证据里存整数 fired 与 repeats，命中率由 fired/repeats 派生，所以 evidence.json 能被 jq 直接解析，不需要为「3/3」写字符串解析器。",
+          "en": "repeats defaults to 3 and runs fully on both sides. The evidence stores integer fired and repeats counts, so fired/repeats is derived and jq can read evidence.json without a parser for \"3/3\"."
+        },
+        "code": "CLOSED  ⇔  pre:        every PoC FIRED repeats/repeats\n        +  post:       every PoC exited silent_exit on every run\n        +  regression: no new failures"
+      },
+      {
+        "title": {
+          "zh": "配置：一个 pocgate.yaml 描述一个目标",
+          "en": "Configuration: one pocgate.yaml per target"
+        },
+        "body": {
+          "zh": "所有相对路径都相对这个文件所在目录解析，所有命令也在这个目录里执行。未知字段直接报错（退出码 78）；补丁不能改 pocgate.yaml 和 PoC 文件；baseline 记录的源码树摘要必须和 verify 时的副本一致，否则也要重跑 baseline。",
+          "en": "Relative paths resolve against the file's directory, and commands run there. An unknown field is an error (exit 78); a patch may not touch pocgate.yaml or a PoC; the source-tree digest recorded by baseline must match the copy verify works on, or baseline has to be rerun."
+        },
+        "code": "target:\n  name: shop\n  build: go build ./...\n  service:\n    cmd: ./shop\n    port: 18081\noracles:\n  - id: authbypass\n    poc: pocs/authbypass.sh\n    repeats: 3\n    fired_when:\n      exit: 0\n      silent_exit: 1\nregression:\n  cmd: go test ./...\n  parser: exit_code\nlabels:\n  cve: CVE-2026-00000"
+      },
+      {
+        "title": {
+          "zh": "退出码与 CI 门禁",
+          "en": "Exit codes and the CI gate"
+        },
+        "body": {
+          "zh": "--fail-on 按「闭合风险」排序，阈值定得越低越严格：REGRESSION_BROKEN 会同时拦下 REGRESSION_BROKEN、STILL_VULNERABLE 与 INCONCLUSIVE；INCONCLUSIVE 最宽松，只拦 INCONCLUSIVE。判定码只占 0–3，CLI 故障从 64 起（64 用法、70 工具或环境、78 配置）。",
+          "en": "--fail-on orders by closure risk, so the lower threshold is the stricter one: REGRESSION_BROKEN blocks REGRESSION_BROKEN, STILL_VULNERABLE and INCONCLUSIVE; INCONCLUSIVE is the loosest and blocks only INCONCLUSIVE. Verdicts occupy 0–3 only; CLI failures start at 64 (64 usage, 70 tool or environment, 78 configuration)."
+        },
+        "code": "- name: closure gate\n  run: pocgate verify --patch fix.diff --json --fail-on REGRESSION_BROKEN"
+      },
+      {
+        "title": {
+          "zh": "证据、密钥与隔离边界",
+          "en": "Evidence, keys and the isolation boundary"
+        },
+        "body": {
+          "zh": "verify 在 $TMPDIR 下的副本里应用补丁、重建、重跑，结束即删除；工作区除 .pocgate/（证据与公钥）外不会被写。attest verify 的 --pubkey 必填，退出码 0 通过 / 1 失败 / 64 用法错误。隔离边界是临时目录，不是容器——要在多强的隔离里跑由你决定。",
+          "en": "verify applies the patch, rebuilds and reruns inside a copy under $TMPDIR, then deletes it; nothing outside .pocgate/ (evidence and public key) is written in your workspace. attest verify requires --pubkey and exits 0 on success, 1 on failure, 64 on a usage error. The isolation boundary is a temporary directory, not a container — how strong it must be is your decision."
+        },
+        "code": "pocgate attest verify --pubkey /secure/signer.pub .pocgate/evidence/latest.json"
+      }
+    ]
+  },
+  "limitations": [
+    {
+      "zh": "demo 是合成靶场，只证明机制跑通，不证明覆盖了真实组件或信创中间件；仓库里没有任何真实 CVE 的可用 exploit。",
+      "en": "The demo is a synthetic fixture: it proves the mechanism runs, not that real components or domestic middleware are covered. The repository ships no working exploit for any real CVE."
+    },
+    {
+      "zh": "verify 的隔离边界是临时目录，不是容器。需要什么级别的隔离，由使用者在调用环境里决定。",
+      "en": "verify isolates through a temporary directory, not a container. The level of isolation is decided by the environment you run it in."
+    },
+    {
+      "zh": "补丁应用依赖系统的 patch，命令统一经 sh -c 执行，服务启停基于 POSIX 进程组；release 也产出 Windows 二进制，但 v0.1 只承诺 Linux/macOS 的启停语义。",
+      "en": "Patch application needs the system patch, commands go through sh -c, and service start/stop relies on POSIX process groups. Windows binaries are produced by the release workflow, but v0.1 only promises start/stop semantics on Linux and macOS."
+    },
+    {
+      "zh": "证据证明的是「这一次观察里，这些 PoC 的行为如此」，不证明 PoC 覆盖了该 CVE 的所有利用路径——那取决于你写的 PoC。",
+      "en": "The evidence states how these PoCs behaved in this one observation. It does not prove a PoC covers every exploitation path of the CVE; that depends on the PoC you write."
+    },
+    {
+      "zh": "运行 pocgate 二进制本身不需要 Go，但 demo 与 Go 目标构建需要 go、sh、patch、curl。",
+      "en": "Running the pocgate binary needs no Go, but the demo and any Go target build need go, sh, patch and curl."
+    },
+    {
+      "zh": "JUnit 报告文件（v0.1 只从 stdout 读）、SARIF 与第三方适配器、--sandbox docker 都还在路线图上，没有实现。",
+      "en": "JUnit report files (v0.1 reads stdout only), SARIF and third-party adapters, and --sandbox docker are roadmap items, not implemented features."
+    }
+  ],
+  "cta": {
+    "headline": {
+      "zh": "下一次说「修好了」，带上一份能重算的证据。",
+      "en": "Next time you say \"fixed\", bring a record that recomputes."
+    },
+    "sub": {
+      "zh": "先跑一遍随包的合成靶场，再把同一条命令指向你自己的 CVE 与 PoC。",
+      "en": "Run the bundled fixture once, then point the same commands at your own CVE and PoCs."
+    },
+    "button": {
+      "zh": "在 GitHub 查看源码",
+      "en": "Read the source on GitHub"
+    }
+  },
+  "footer": {
+    "tag": {
+      "zh": "pocgate 0.1.0 · Apache-2.0 · 单二进制，离线复算",
+      "en": "pocgate 0.1.0 · Apache-2.0 · one binary, offline recomputation"
+    }
+  }
+}

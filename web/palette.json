@@ -1,0 +1,38 @@
+{
+  "mode": "auto",
+  "id": "af56e6-e76ad4-bfacf6-9c31ae2ea7db",
+  "identity": "https://github.com/supermarioyl/pocgate",
+  "primary": "#af56e6",
+  "secondary": "#e76ad4",
+  "highlight": "#bfacf6",
+  "dark": {
+    "bg": "#080712",
+    "panel": "#10101f",
+    "code": "#100d1d",
+    "ink": "#f2eefd",
+    "muted": "#a79cc4",
+    "line": "#2d1841",
+    "primary": "#af56e6",
+    "secondary": "#e76ad4",
+    "highlight": "#bfacf6",
+    "accent": "#af56e6",
+    "buttonStart": "#a250d6",
+    "buttonEnd": "#b352a4",
+    "buttonText": "#ffffff"
+  },
+  "light": {
+    "bg": "#fcf9fe",
+    "panel": "#fbf7fe",
+    "code": "#f9f3fd",
+    "ink": "#1f1630",
+    "muted": "#675e88",
+    "line": "#e6cbf7",
+    "primary": "#9a4ccb",
+    "secondary": "#aa4e9c",
+    "highlight": "#766a97",
+    "accent": "#9a4ccb",
+    "buttonStart": "#a250d6",
+    "buttonEnd": "#b352a4",
+    "buttonText": "#ffffff"
+  }
+}
