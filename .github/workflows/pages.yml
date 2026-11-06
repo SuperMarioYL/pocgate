@@ -1,5 +1,4 @@
-# Deploy the product site through the pinned web-factory renderer.
-# Prereq: enable GitHub Pages → Source: "GitHub Actions".
+# Deploy product site via web-factory
 name: Deploy site
 
 on:
@@ -12,10 +11,6 @@ permissions:
   contents: read
   pages: write
   id-token: write
-
-concurrency:
-  group: 'pages-${{ github.ref }}'
-  cancel-in-progress: false
 
 jobs:
   site:
