@@ -9,12 +9,12 @@
 </p>
 
 <p align="center">
-  <img src="https://readme-typing-svg.demolab.com?font=JetBrains+Mono&size=19&duration=3000&pause=1400&color=0D9488&center=true&vCenter=true&width=880&lines=PoC+fires+on+the+vulnerable+build%2C+silent+after+the+patch%3F;Then+it+is+CLOSED.+Anything+else+is+a+guess.;Signed+evidence%2C+recomputed+offline+on+another+machine." alt="pocgate: PoC fires before the patch, silent after, signed evidence recomputed offline">
+  <img src="https://readme-typing-svg.demolab.com?font=JetBrains+Mono&size=19&duration=3000&pause=1400&color=0D9488&center=true&vCenter=true&width=880&lines=PoC+fires+on+the+vulnerable+build%2C+silent+after+the+patch%3F;Then+it+is+CLOSED.+Anything+else+is+not+CLOSED.;Signed+evidence%2C+recomputed+offline+on+another+machine." alt="pocgate: PoC fires before the patch, silent after, signed evidence recomputed offline">
 </p>
 
 <p align="center">
   <a href="https://github.com/SuperMarioYL/pocgate/releases"><img alt="version 0.1.0" src="https://img.shields.io/badge/version-0.1.0-0d9488?style=flat-square"></a>
-  <a href="./LICENSE"><img alt="MIT license" src="https://img.shields.io/badge/license-MIT-0d9488?style=flat-square"></a>
+  <a href="./LICENSE"><img alt="Apache-2.0 license" src="https://img.shields.io/badge/license-Apache--2.0-0d9488?style=flat-square"></a>
   <img alt="Go 1.24" src="https://img.shields.io/badge/go-1.24-0d9488?style=flat-square&logo=go&logoColor=white">
   <img alt="linux and macOS, amd64 and arm64" src="https://img.shields.io/badge/linux%20%7C%20macOS-amd64%20%7C%20arm64-0d9488?style=flat-square">
   <img alt="one dependency" src="https://img.shields.io/badge/deps-1%20(yaml.v3)-0d9488?style=flat-square">
@@ -112,11 +112,11 @@ cmd/pocgate            init · doctor · baseline · verify · demo · attest ve
 ~/.pocgate/key                    本地 ed25519 私钥，首次签名时生成，权限 0600
 ```
 
-没有服务端。`pocgate verify` 在 `$TMPDIR` 下的副本里工作：应用补丁、重建、重跑，结束即删除，你的工作区不会被写。
+没有服务端。`pocgate verify` 在 `$TMPDIR` 下的副本里工作：应用补丁、重建、重跑，结束即删除；工作区除 `.pocgate/`（证据与公钥）外不会被写。
 
 ## <img src="https://api.iconify.design/tabler/download.svg?color=%230d9488" width="20" height="20" alt=""> 安装
 
-要求 Go 1.24+。构建只需要一个依赖（`gopkg.in/yaml.v3`，版本锁在 `go.mod` / `go.sum`），产出的二进制自带 Go 运行时，目标机不需要 Go 或其它包。
+要求 Go 1.24+。构建只需要一个依赖（`gopkg.in/yaml.v3`，版本锁在 `go.mod` / `go.sum`），产出的二进制自带 Go 运行时：**运行 `pocgate` 二进制本身**不需要 Go；但 `pocgate demo` 与 Go 目标的构建需要 `go`，所有 spec 命令经 `sh` 执行、补丁用 `patch` 应用、随包 PoC 用 `curl`。
 
 ```bash
 git clone https://github.com/SuperMarioYL/pocgate.git
@@ -127,7 +127,7 @@ install -m 0755 pocgate /usr/local/bin/pocgate   # 或直接 scp 进内网机器
 
 **气隙环境**有三条路，按省事程度排：
 
-1. 打 `v*` 标签时 release 工作流会产出 `pocgate_<version>_<os>_<arch>.tar.gz`（linux/darwin × amd64/arm64），拷进去解压即可，目标机不需要 Go。
+1. 打 `v*` 标签时 release 工作流会产出 `pocgate_<version>_<os>_<arch>.tar.gz`（linux/darwin × amd64/arm64），拷进去解压即可；运行 `pocgate version` 与 `attest verify` 不需要 Go，`demo` 与 Go 目标构建另需 `go`、`sh`、`patch`、`curl`。
 2. 在有网的同架构机器上 `go mod vendor`，把整个仓库目录（含 `vendor/`）拷进内网，用 `GOFLAGS=-mod=vendor go build ./...` 构建，全程不需要代理。
 3. 只带模块缓存：`go mod download` 后把 `$GOMODCACHE` 一起拷过去。这是三条里最容易出错的一条，前两条优先。
 
@@ -141,13 +141,15 @@ pocgate doctor
 
 ## <img src="https://api.iconify.design/tabler/rocket.svg?color=%230d9488" width="20" height="20" alt=""> 快速开始
 
-### 第一分钟：不需要准备任何东西
+### 第一分钟：跑随包靶场
+
+`demo` 会在本机编译随包靶场并执行回归，需要 `go`、`sh`、`patch` 与 `curl`；`pocgate` 二进制本身不需要 Go。
 
 ```bash
 pocgate demo
 ```
 
-它把随包的合成靶场跑一遍：三个 PoC 在漏洞构建上各 `FIRED 3/3`，套上好补丁后各 `SILENT 0/3`，回归无新增，判 `CLOSED`；随后两条故意做坏的补丁分别得到 `STILL_VULNERABLE` 和 `REGRESSION_BROKEN`；最后签出 `evidence.json` 并当场校验。
+它把随包的合成靶场跑一遍：三个 PoC 在漏洞构建上各 `FIRED 3/3`，套上好补丁后各 `SILENT 0/3`，回归无新增，判 `CLOSED`；随后两条故意做坏的补丁分别得到 `STILL_VULNERABLE` 和 `REGRESSION_BROKEN`；最后写出签名证据 `evidence.json` 并打印 `pocgate attest verify` 复核命令。
 
 ### 第二分钟起：换成你自己的目标
 
@@ -160,22 +162,27 @@ pocgate baseline              # 构建、起服务、每个 PoC 跑 3 次，落 
 
 `baseline` 只有在每个 PoC 每次运行都触发时才写盘；否则它打印是哪个 PoC 没打中，返回 `INCONCLUSIVE`，并删掉上一轮的旧 baseline，避免留下过期结论。
 
-拿到 Agent 的补丁后：
+拿到 Agent 的补丁后，**不要把改动直接留在目标树里**：`verify` 要求工作树与 `baseline` 时的源码摘要完全一致，改过就判 `INCONCLUSIVE`。在单独一份 clone / worktree 里导出补丁，或者先撤掉已应用的改动：
 
 ```bash
-git diff > /tmp/fix.diff                 # 必须是 git 风格、带 a/ b/ 前缀
-pocgate verify --patch /tmp/fix.diff     # 临时副本里应用、重建、重跑
+# 在 Agent 自己的 clone / worktree 里导出补丁；目标树保持 baseline 时的状态
+git -C /path/to/agent-fix diff > /tmp/fix.diff    # 必须是 git 风格、带 a/ b/ 前缀
+
+# 如果改动已经落在当前树：先撤回，让树回到 baseline 时的提交
+git stash                                          # 或 git checkout -- .
+
+pocgate verify --patch /tmp/fix.diff               # 临时副本里应用、重建、重跑
 pocgate attest verify --pubkey /secure/signer.pub .pocgate/evidence/latest.json
 ```
 
-`verify` 不动你的工作区。它会拒绝这几类输入，全部落在 `INCONCLUSIVE`：补丁改动了 `pocgate.yaml`、补丁改动了 PoC 本身、工作区在 `baseline` 之后变过（说明基线描述的不是这份代码）。
+`verify` 除 `.pocgate/`（证据与公钥）外不写你的工作区。它会拒绝这几类输入，全部落在 `INCONCLUSIVE`：补丁改动了 `pocgate.yaml`、补丁改动了 PoC 本身、工作区在 `baseline` 之后变过（说明基线描述的不是这份代码）。
 
 `attest verify` 的公钥要你自己给：和证据放在一起的 `.pub` 只能证明文件之间自洽，能改证据的人也能改它。真实用法是把公钥从另一条通道带过去——U 盘、配置管理系统、或者刻在内网 wiki 上的指纹。
 
 ## <img src="https://api.iconify.design/tabler/movie.svg?color=%230d9488" width="20" height="20" alt=""> 演示
 
 <p align="center">
-  <img src="assets/demo.gif" alt="终端录制：pocgate demo 在漏洞构建上三个 PoC 各 FIRED 3/3，好补丁后 CLOSED，坏补丁 STILL_VULNERABLE 与 REGRESSION_BROKEN，最后 attest verify 通过" width="1000">
+  <img src="assets/demo.gif" alt="终端录制：pocgate demo 在漏洞构建上三个 PoC 各 FIRED 3/3，好补丁后 CLOSED，坏补丁 STILL_VULNERABLE 与 REGRESSION_BROKEN，最后运行 attest verify 复核" width="1000">
 </p>
 
 这段是 `assets/demo.tape` 用 [vhs](https://github.com/charmbracelet/vhs) 录的真实终端输出，没有剪辑。录制机上（darwin/arm64、Go 1.24.1）整轮 `pocgate demo` 耗时 **9.4 秒**：36 次 PoC 执行、6 次回归执行、4 次构建。
@@ -190,7 +197,7 @@ pocgate attest verify --pubkey /secure/signer.pub .pocgate/evidence/latest.json
 
 这三条补丁分别演示四态里的三种：好补丁三段齐全 → `CLOSED`；只修了遍历与 SSRF、`/admin` 照旧开放 → `STILL_VULNERABLE`；全部修好但顺手加了一个断言旧行为的测试 → `REGRESSION_BROKEN`。
 
-同一轮的真实输出、每次判定的计数、证据摘要与公钥都记在 [`docs/demo-results.json`](docs/demo-results.json) 里，可以对着自己的运行结果核对。这是合成靶场，它证明的是机制，不是「覆盖了真实组件」。
+同一轮的真实输出、每次判定的计数与证据结构都记在 [`docs/demo-results.json`](docs/demo-results.json) 里；计数、判定与结构可以和你的运行对照，但证据里的摘要和公钥属于那一次录制（每次运行的时间戳不同、密钥按机器生成），不能复现。这是合成靶场，它证明的是机制，不是「覆盖了真实组件」。
 
 ## <img src="https://api.iconify.design/tabler/terminal-2.svg?color=%230d9488" width="20" height="20" alt=""> 命令
 
@@ -238,8 +245,10 @@ authbypass: FIRED 3/3 (exit 0, 200ms) — baseline captured
 
 ```yaml
 - name: closure gate
-  run: pocgate verify --patch fix.diff --json --fail-on INCONCLUSIVE
+  run: pocgate verify --patch fix.diff --json --fail-on REGRESSION_BROKEN
 ```
+
+注意阈值方向：闭合风险越低越安全，因此**阈值定得越低越严格**。`REGRESSION_BROKEN` 会同时拦下 `REGRESSION_BROKEN`、`STILL_VULNERABLE` 与 `INCONCLUSIVE`；`INCONCLUSIVE` 最宽松，只拦 `INCONCLUSIVE`，会把 `STILL_VULNERABLE` 放行。
 
 ### `attest verify`
 
@@ -320,14 +329,14 @@ labels:
 | --- | --- |
 | 三段合取判定 + 四态 + 退出码 | 已实现 |
 | 每个 PoC 前后各跑 N 次，三态分类 | 已实现 |
-| 补丁在临时副本中应用，工作区零写入 | 已实现 |
+| 补丁在临时副本中应用，工作区除 `.pocgate/` 外无写入 | 已实现 |
 | 基线树 / `pocgate.yaml` / PoC 摘要一致性检查 | 已实现 |
 | 规范 JSON + sha256 + ed25519 签名与离线校验 | 已实现 |
 | `--json`、`--fail-on` 接 CI | 已实现 |
 | `init` / `doctor` / 自带靶场 `demo` | 已实现 |
 | JUnit 报告文件（非 stdout） | 路线图 |
 | 容器/虚拟机沙箱编排（`--sandbox docker`） | 路线图 |
-| Windows 目标进程管理 | 可构建（release 带 Windows 二进制），但 v0.1 只承诺 Linux/macOS 的启停语义 |
+| Windows 目标进程管理 | 可构建（release 工作流会产出 Windows 二进制），但 v0.1 只承诺 Linux/macOS 的启停语义 |
 | 写补丁、生成 PoC、调模型 | 不做 |
 | SARIF / 第三方报告适配器 | 路线图 |
 | Web UI、多用户、RBAC、服务端 | 企业版，v0.1 无 |
@@ -337,12 +346,12 @@ labels:
 - `demo` 是**合成靶场**，只证明机制跑通，不证明覆盖了真实组件或信创中间件。真实结论只能靠你带自己的 CVE 与 PoC 跑出来。
 - 仓库里**没有任何真实 CVE 的可用 exploit**，只有合成缺陷。真实 PoC 留在你自己的内网。
 - `verify` 的隔离边界是**临时目录**，不是容器。你需要在什么样的隔离环境里跑，由你决定；pocgate 只保证观察可复算。
-- 补丁应用依赖系统的 `patch`；命令统一经 `sh -c` 执行，服务启停基于 POSIX 进程组。release 里有 Windows 二进制，但 Windows 上只能管理直接子进程，因此带服务的目标建议只在 Linux/macOS 上跑。
+- 补丁应用依赖系统的 `patch`；命令统一经 `sh -c` 执行，服务启停基于 POSIX 进程组。release 工作流会产出 Windows 二进制，但 Windows 上只能管理直接子进程，因此带服务的目标建议只在 Linux/macOS 上跑。
 - 证据证明的是「在这一次观察里，这些 PoC 的行为如此」。它不证明 PoC 覆盖了该 CVE 的所有利用路径——那取决于你写的 PoC。
 
 ## <img src="https://api.iconify.design/tabler/currency-yuan.svg?color=%230d9488" width="20" height="20" alt=""> 付费与企业版
 
-CLI 用 MIT 许可开源，不收费：`oracle` 与 `evidence.json` 格式必须免费，它才可能成为事实标准——买方的测评机构要能直接读，而不是先买一份授权。
+CLI 用 Apache-2.0 许可开源，不收费：`oracle` 与 `evidence.json` 格式必须免费，它才可能成为事实标准——买方的测评机构要能直接读，而不是先买一份授权。
 
 钱在私有化交付上。**v0.1 不包含企业版**，以下是试点与采购口径，不是已交付的功能：
 
@@ -379,4 +388,4 @@ GOPROXY=off go test -race ./...
 
 目录结构与上文架构一节一致；`internal/demo/fixtures/shop` 是随包靶场，它的 `pocgate.yaml`、`main.go`、三个 PoC、`patch.diff` 是一套可以照抄的最小样例。
 
-<p align="center"><sub><a href="./LICENSE">MIT</a> © 2026 SuperMarioYL</sub></p>
+<p align="center"><sub><a href="./LICENSE">Apache-2.0</a> © 2026 SuperMarioYL</sub></p>

@@ -153,12 +153,20 @@ func TestDecide(t *testing.T) {
 			want: StillVulnerable,
 		},
 		{
-			name: "a broken regression cannot rescue an unobserved leg",
+			name: "a new regression failure outranks an unobserved leg",
 			obs: Observations{
 				Oracles:    []LegObservation{{ID: "a", Repeats: 3, PrePresent: true, PostPresent: true, PreFired: 3, PostUnobserved: 1}},
 				Regression: brokenRegression,
 			},
-			want: Inconclusive,
+			want: RegressionBroken,
+		},
+		{
+			name: "unobserved runs and a new regression failure together report the definite regression",
+			obs: Observations{
+				Oracles:    []LegObservation{{ID: "a", Repeats: 3, PrePresent: true, PostPresent: true, PreFired: 3, PostUnobserved: 2}},
+				Regression: brokenRegression,
+			},
+			want: RegressionBroken,
 		},
 	}
 

@@ -7,8 +7,9 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [0.1.0] - 2026-11-07
 
-First release. Everything below is implemented and covered by the test suite
-except where a note says otherwise.
+Initial version (pre-release development snapshot). Everything below is
+implemented and covered by the test suite except where a note says otherwise.
+The project is licensed under the Apache License 2.0; see `LICENSE`.
 
 ### Added
 
@@ -19,7 +20,7 @@ except where a note says otherwise.
 - `pocgate verify --patch`: copies the target into a scratch directory, applies
   a git-style diff with `patch -p1 --batch --forward`, rebuilds, replays every
   PoC, runs the regression command before and after, and writes signed evidence.
-  The working tree is never modified.
+  The working tree is never modified outside `.pocgate/`.
 - Four verdicts as process exit codes: `CLOSED` (0), `STILL_VULNERABLE` (1),
   `REGRESSION_BROKEN` (2), `INCONCLUSIVE` (3), decided by a three-leg
   conjunction: every PoC fired pre-patch, none fires post-patch, no new
@@ -35,8 +36,9 @@ except where a note says otherwise.
   canonical. Offline; a sibling `.pub` is not accepted as a trust anchor.
 - `pocgate demo`: runs a bundled synthetic target through baseline, a good
   patch (`CLOSED`), a partial patch (`STILL_VULNERABLE`), and a patch that adds
-  a failing test (`REGRESSION_BROKEN`), then verifies the evidence. Measured at
-  9.4 s on darwin/arm64 with Go 1.24.1.
+  a failing test (`REGRESSION_BROKEN`), writes the signed evidence, and prints
+  the `pocgate attest verify` command. Measured at 9.4 s on darwin/arm64 with
+  Go 1.24.1.
 - `pocgate doctor`: reports shell and `patch` availability, Go and curl, spec
   validity, service port availability, and signing-key readiness, as text or
   `--json`.
@@ -55,6 +57,6 @@ except where a note says otherwise.
 - Linux and macOS only; target process management assumes POSIX process groups.
 - Regression reports are read from stdout; there is no report-path field yet.
 - `--sandbox docker`, SARIF adapters, and the enterprise remediation pack are
-  not implemented in this release.
+  not implemented in this version.
 
 [0.1.0]: https://github.com/SuperMarioYL/pocgate/releases/tag/v0.1.0

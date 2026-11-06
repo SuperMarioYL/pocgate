@@ -28,6 +28,9 @@ git push -u origin main
 
 ## 3. 打第一个 tag，验收 release 资产
 
+仓库目前**还没有任何 tag 或 release**；下面的 `v0.1.0` 由首次发布流程创建，README 里的
+`github.com/SuperMarioYL/pocgate` 链接与下载地址也在那之后才生效。
+
 ```bash
 # VERSION 必须与 tag 一致，否则 release 工作流会主动失败
 cat VERSION            # 0.1.0
@@ -41,8 +44,9 @@ git push origin v0.1.0
 - 还有 `SHA256SUMS`。下载一个归档，`sha256sum -c` 通过。
 - 解压后 `pocgate version` 输出 `pocgate 0.1.0`（版本由 `-ldflags -X main.version` 注入，
   不是文件里的默认值）。
-- 在一台**没有 Go**的机器（或容器）里跑 `./pocgate demo`，仍然 CLOSED。这是「单二进制、无运行时依赖」
-  这句承诺的唯一证据。
+- 在一台**没有 Go** 的机器（或容器）里跑 `./pocgate version` 与 `./pocgate help`，两者都正常。
+  这是「二进制本身不需要 Go」的证据；`pocgate demo` 与 Go 目标构建还需要 `go`、`sh`、`patch`、`curl`，
+  请在装了 Go 的机器上验收 demo。
 
 ## 4. 镜像与分发（同一批内容，不要重写）
 
@@ -71,7 +75,9 @@ git push origin v0.1.0
    OEM 白标 ¥20 万 / 年 + 每次交付 ¥8,000。**CLI 不收费**，钱在举证包、台账、离线 license、维保上。
 3. 交付动作只有三步，任何一步失败都要如实记录而不是绕过去：
    - 在客户气隙机器上 `pocgate baseline`，跑他们自己的一条 CVE；
-   - 在他们 Agent 产出的补丁上 `pocgate verify --patch fix.diff`，拿到证据；
+   - 在他们 Agent 产出的补丁上 `pocgate verify --patch fix.diff`，拿到证据。生成 diff 时目标树必须仍是
+     `baseline` 时的状态：在单独 clone / worktree 里导出补丁，或先 `git stash` / checkout 回基线提交；
+     在同一棵树里先打补丁再 `git diff` 会让树偏离基线，判 `INCONCLUSIVE`；
    - 在**第二台**机器上 `pocgate attest verify --pubkey <客户带过去的公钥> evidence.json`。
 4. 交付物是一份 `evidence.json` + 一份能递给测评机构的样例。企业版的举证包渲染 **v0.1 没有实现**，
    试点阶段用脚本手工整理，不要在合同里写成已交付功能。

@@ -182,6 +182,11 @@ func runVerify(ctx context.Context, args []string, stdout, stderr io.Writer) int
 	if err != nil {
 		if errors.Is(err, verdict.ErrBadPatch) {
 			fmt.Fprintf(stderr, "pocgate verify: invalid patch: %v\n", err)
+			// A bad patch still leaves the gate without evidence, so --json must
+			// produce the documented error object instead of empty stdout.
+			if *asJSON {
+				printJSONError(stdout, string(verdict.Inconclusive), err.Error())
+			}
 			return exitUsage
 		}
 		fmt.Fprintf(stderr, "pocgate verify: %v\n", err)

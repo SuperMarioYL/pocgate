@@ -9,12 +9,12 @@
 </p>
 
 <p align="center">
-  <img src="https://readme-typing-svg.demolab.com?font=JetBrains+Mono&size=19&duration=3000&pause=1400&color=0D9488&center=true&vCenter=true&width=880&lines=PoC+fires+on+the+vulnerable+build%2C+silent+after+the+patch%3F;Then+it+is+CLOSED.+Anything+else+is+a+guess.;Signed+evidence%2C+recomputed+offline+on+another+machine." alt="pocgate: PoC fires before the patch, silent after, signed evidence recomputed offline">
+  <img src="https://readme-typing-svg.demolab.com?font=JetBrains+Mono&size=19&duration=3000&pause=1400&color=0D9488&center=true&vCenter=true&width=880&lines=PoC+fires+on+the+vulnerable+build%2C+silent+after+the+patch%3F;Then+it+is+CLOSED.+Anything+else+is+not+CLOSED.;Signed+evidence%2C+recomputed+offline+on+another+machine." alt="pocgate: PoC fires before the patch, silent after, signed evidence recomputed offline">
 </p>
 
 <p align="center">
   <a href="https://github.com/SuperMarioYL/pocgate/releases"><img alt="version 0.1.0" src="https://img.shields.io/badge/version-0.1.0-0d9488?style=flat-square"></a>
-  <a href="./LICENSE"><img alt="MIT license" src="https://img.shields.io/badge/license-MIT-0d9488?style=flat-square"></a>
+  <a href="./LICENSE"><img alt="Apache-2.0 license" src="https://img.shields.io/badge/license-Apache--2.0-0d9488?style=flat-square"></a>
   <img alt="Go 1.24" src="https://img.shields.io/badge/go-1.24-0d9488?style=flat-square&logo=go&logoColor=white">
   <img alt="linux and macOS, amd64 and arm64" src="https://img.shields.io/badge/linux%20%7C%20macOS-amd64%20%7C%20arm64-0d9488?style=flat-square">
   <img alt="one dependency" src="https://img.shields.io/badge/deps-1%20(yaml.v3)-0d9488?style=flat-square">
@@ -113,11 +113,11 @@ All state on disk:
 ~/.pocgate/key                    local ed25519 private key, created on first signing, mode 0600
 ```
 
-There is no server. `pocgate verify` works in a copy under `$TMPDIR`: patch, rebuild, replay, delete. Your working tree is never written to.
+There is no server. `pocgate verify` works in a copy under `$TMPDIR`: patch, rebuild, replay, delete; nothing outside `.pocgate/` (the evidence and its public key) is written to your working tree.
 
 ## <img src="https://api.iconify.design/tabler/download.svg?color=%230d9488" width="20" height="20" alt=""> Install
 
-Go 1.24+ to build. One dependency (`gopkg.in/yaml.v3`, pinned in `go.mod` / `go.sum`); the binary carries the Go runtime, so the target machine needs neither Go nor any package.
+Go 1.24+ to build. One dependency (`gopkg.in/yaml.v3`, pinned in `go.mod` / `go.sum`); the binary carries the Go runtime, so **running the `pocgate` binary itself** needs no Go. `pocgate demo` and Go-target builds do need `go`, every spec command runs through `sh`, patches are applied with `patch`, and the bundled PoCs use `curl`.
 
 ```bash
 git clone https://github.com/SuperMarioYL/pocgate.git
@@ -128,7 +128,7 @@ install -m 0755 pocgate /usr/local/bin/pocgate   # or scp it into the air-gapped
 
 **Air-gapped install**, easiest first:
 
-1. Tagging `v*` makes the release workflow publish `pocgate_<version>_<os>_<arch>.tar.gz` (linux/darwin × amd64/arm64). Copy it in, unpack, done; the target machine does not need Go.
+1. Tagging `v*` makes the release workflow publish `pocgate_<version>_<os>_<arch>.tar.gz` (linux/darwin × amd64/arm64). Copy it in and unpack; `pocgate version` and `attest verify` need no Go, while `demo` and Go-target builds also need `go`, `sh`, `patch`, and `curl`.
 2. On a connected machine of the same architecture, `go mod vendor`, copy the whole repository including `vendor/`, then `GOFLAGS=-mod=vendor go build ./...` inside the air gap. No proxy involved.
 3. Module cache only: `go mod download`, then copy `$GOMODCACHE` as well. This is the most error-prone of the three; prefer the first two.
 
@@ -142,13 +142,15 @@ It reports `sh` and `patch` (required), Go and curl, whether `pocgate.yaml` is v
 
 ## <img src="https://api.iconify.design/tabler/rocket.svg?color=%230d9488" width="20" height="20" alt=""> Quickstart
 
-### First minute: nothing to prepare
+### First minute: run the bundled target
+
+`demo` compiles the bundled target and runs the regression suite locally, so it needs `go`, `sh`, `patch`, and `curl`; the `pocgate` binary itself needs no Go.
 
 ```bash
 pocgate demo
 ```
 
-It runs the bundled synthetic target end to end: three PoCs each `FIRED 3/3` on the vulnerable build, each `SILENT 0/3` after the good patch, no new regression — `CLOSED`. Then two deliberately bad patches produce `STILL_VULNERABLE` and `REGRESSION_BROKEN`, and the signed `evidence.json` is verified on the spot.
+It runs the bundled synthetic target end to end: three PoCs each `FIRED 3/3` on the vulnerable build, each `SILENT 0/3` after the good patch, no new regression — `CLOSED`. Then two deliberately bad patches produce `STILL_VULNERABLE` and `REGRESSION_BROKEN`; finally it writes the signed `evidence.json` and prints the `pocgate attest verify` command.
 
 ### From the second minute: your own target
 
@@ -161,22 +163,27 @@ pocgate baseline              # build, start the service, run each PoC 3 times, 
 
 `baseline` writes only when every PoC fired on every run. Otherwise it prints which PoC missed, exits `INCONCLUSIVE`, and deletes the previous baseline so a stale claim cannot be consumed later.
 
-With the agent's patch in hand:
+With the agent's patch in hand, **do not leave the change in the target tree**: `verify` requires the working tree to match the tree digest captured by `baseline` exactly, and a changed tree is `INCONCLUSIVE`. Export the diff from a separate clone / worktree, or revert the applied change first:
 
 ```bash
-git diff > /tmp/fix.diff                 # git style, with a/ and b/ prefixes
-pocgate verify --patch /tmp/fix.diff     # apply in a scratch copy, rebuild, replay
+# export the patch from the agent's own clone / worktree; the target tree stays as it was at baseline
+git -C /path/to/agent-fix diff > /tmp/fix.diff    # git style, with a/ and b/ prefixes
+
+# if the change is already applied in the current tree, put the tree back to the baseline commit
+git stash                                          # or git checkout -- .
+
+pocgate verify --patch /tmp/fix.diff               # apply in a scratch copy, rebuild, replay
 pocgate attest verify --pubkey /secure/signer.pub .pocgate/evidence/latest.json
 ```
 
-`verify` does not touch your working tree. It refuses, as `INCONCLUSIVE`: a patch that edits `pocgate.yaml`, a patch that edits a PoC, and a working tree that changed after `baseline` was captured (that baseline describes different files).
+Outside `.pocgate/` (the evidence and its public key), `verify` writes nothing to your working tree. It refuses, as `INCONCLUSIVE`: a patch that edits `pocgate.yaml`, a patch that edits a PoC, and a working tree that changed after `baseline` was captured (that baseline describes different files).
 
 The public key for `attest verify` must come from you: a `.pub` sitting next to the evidence only proves the two files agree, and whoever can rewrite one can rewrite the other. In practice the key travels over another channel — a USB stick, configuration management, or a fingerprint on the intranet wiki.
 
 ## <img src="https://api.iconify.design/tabler/movie.svg?color=%230d9488" width="20" height="20" alt=""> Demo
 
 <p align="center">
-  <img src="assets/demo.gif" alt="Terminal recording: pocgate demo fires three PoCs 3/3 on the vulnerable build, CLOSED after the good patch, STILL_VULNERABLE and REGRESSION_BROKEN for the bad patches, then attest verify passes" width="1000">
+  <img src="assets/demo.gif" alt="Terminal recording: pocgate demo fires three PoCs 3/3 on the vulnerable build, CLOSED after the good patch, STILL_VULNERABLE and REGRESSION_BROKEN for the bad patches, then an attest verify run" width="1000">
 </p>
 
 This is a real terminal recording of `assets/demo.tape` made with [vhs](https://github.com/charmbracelet/vhs), uncut. On the recording machine (darwin/arm64, Go 1.24.1) the whole `pocgate demo` took **9.4 seconds**: 36 PoC executions, 6 regression runs, 4 builds.
@@ -191,7 +198,7 @@ The target is a small HTTP service with three independent synthetic flaws:
 
 The three patches show three of the four verdicts: the good patch satisfies all legs → `CLOSED`; the partial patch fixes traversal and SSRF but leaves `/admin` open → `STILL_VULNERABLE`; the patch that fixes everything but adds a test asserting the old behaviour → `REGRESSION_BROKEN`.
 
-The real output of that run — per-verdict counts, the evidence digest, the public key — is in [`docs/demo-results.json`](docs/demo-results.json) so you can check it against your own run. It is a synthetic target: it proves the mechanism, not coverage of real components.
+The real output of that run — per-verdict counts and the evidence structure — is in [`docs/demo-results.json`](docs/demo-results.json). The counts, verdicts, and structure are comparable with your own run; the recorded digest and public key belong to that recording (per-run timestamps, a key generated on that machine) and cannot be reproduced. It is a synthetic target: it proves the mechanism, not coverage of real components.
 
 ## <img src="https://api.iconify.design/tabler/terminal-2.svg?color=%230d9488" width="20" height="20" alt=""> Commands
 
@@ -239,8 +246,10 @@ The smallest CI step:
 
 ```yaml
 - name: closure gate
-  run: pocgate verify --patch fix.diff --json --fail-on INCONCLUSIVE
+  run: pocgate verify --patch fix.diff --json --fail-on REGRESSION_BROKEN
 ```
+
+Mind the direction: lower closure risk is safer, so **a lower threshold is stricter**. `REGRESSION_BROKEN` blocks `REGRESSION_BROKEN`, `STILL_VULNERABLE`, and `INCONCLUSIVE`; `INCONCLUSIVE` is the loosest, blocking only `INCONCLUSIVE` and letting `STILL_VULNERABLE` through.
 
 ### `attest verify`
 
@@ -321,14 +330,14 @@ Rules that bite:
 | --- | --- |
 | Three-leg conjunction, four verdicts, exit codes | implemented |
 | N repeats per side with three-state classification | implemented |
-| Patch applied in a scratch copy, zero writes to the working tree | implemented |
+| Patch applied in a scratch copy, no writes outside `.pocgate/` | implemented |
 | Baseline tree / spec / PoC digest consistency checks | implemented |
 | Canonical JSON + sha256 + ed25519 signing and offline verification | implemented |
 | `--json` and `--fail-on` for CI | implemented |
 | `init` / `doctor` / bundled `demo` | implemented |
 | JUnit report files (instead of stdout) | roadmap |
 | Container / VM sandbox orchestration (`--sandbox docker`) | roadmap |
-| Windows target process management | builds (release ships Windows binaries), but v0.1 only promises Linux/macOS start/stop semantics |
+| Windows target process management | builds (the release workflow produces Windows binaries), but v0.1 only promises Linux/macOS start/stop semantics |
 | Writing patches, generating PoCs, calling models | out of scope |
 | SARIF / third-party report adapters | roadmap |
 | Web UI, multi-user, RBAC, server | enterprise, not in v0.1 |
@@ -338,12 +347,12 @@ Limits, next to what they affect:
 - `demo` runs a **synthetic target**. It proves the mechanism works; it does not prove coverage of real components or vendor middleware. A real conclusion needs your own CVE and your own PoC.
 - The repository contains **no working exploit for a real CVE**, only synthetic flaws. Real PoCs stay inside your network.
 - `verify` isolates by **temporary directory**, not by container. Which sandbox you run it in is your call; pocgate only guarantees that the observation is reproducible.
-- Applying a patch depends on the system `patch`; commands run through `sh -c`, and service start/stop is built on POSIX process groups. The release also ships a Windows binary, but there only the direct child can be signalled, so targets that need a service are best run on Linux or macOS.
+- Applying a patch depends on the system `patch`; commands run through `sh -c`, and service start/stop is built on POSIX process groups. The release workflow also produces a Windows binary, but there only the direct child can be signalled, so targets that need a service are best run on Linux or macOS.
 - The evidence proves "in this observation, these PoCs behaved like this". It does not prove the PoCs cover every exploitation path of the CVE — that is on the PoC you write.
 
 ## <img src="https://api.iconify.design/tabler/currency-yuan.svg?color=%230d9488" width="20" height="20" alt=""> Pricing and enterprise
 
-The CLI is MIT-licensed and free to use. The oracle and the `evidence.json` format must stay free: an assessor has to be able to read the evidence without buying a licence first, otherwise the format can never become a standard.
+The CLI is Apache-2.0-licensed and free to use. The oracle and the `evidence.json` format must stay free: an assessor has to be able to read the evidence without buying a licence first, otherwise the format can never become a standard.
 
 The money is in private delivery. **v0.1 does not include the enterprise edition**; the table below is the pilot and procurement shape, not shipped features:
 
@@ -380,4 +389,4 @@ GOPROXY=off go test -race ./...
 
 The layout is the architecture section above; `internal/demo/fixtures/shop` is the bundled target, and its `pocgate.yaml`, `main.go`, three PoCs and `patch.diff` form a minimal example worth copying.
 
-<p align="center"><sub><a href="./LICENSE">MIT</a> © 2026 SuperMarioYL</sub></p>
+<p align="center"><sub><a href="./LICENSE">Apache-2.0</a> © 2026 SuperMarioYL</sub></p>

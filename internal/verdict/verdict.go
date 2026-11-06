@@ -6,12 +6,13 @@
 //  2. no PoC fires on any run of the patched build,
 //  3. the regression command gained no new failure.
 //
-// CLOSED holds only when all three legs hold. A leg that could not be observed
-// cannot support a closure claim, so any unobserved run yields INCONCLUSIVE,
-// ahead of a broken regression. Among definite observations the reported verdict
-// follows the plan's priority:
+// CLOSED holds only when all three legs hold. When several things go wrong the
+// reported verdict follows the plan's priority:
 //
 //	STILL_VULNERABLE > REGRESSION_BROKEN > INCONCLUSIVE.
+//
+// A fire after the patch and a new regression failure are both definite
+// observations, so they are reported ahead of a leg that could not be observed.
 //
 // The verdict is the process's exit status, so a gate script can branch on it
 // without parsing output:
@@ -23,8 +24,8 @@
 //
 // Run owns the observation half of the gate: it copies the target into a
 // scratch directory, applies the patch there, rebuilds, replays the PoCs, and
-// runs the regression command on both sides. The target's working tree is never
-// written to.
+// runs the regression command on both sides. Run never writes to the target's
+// working tree; the caller writes the signed evidence under .pocgate/.
 package verdict
 
 import (
@@ -155,12 +156,13 @@ type Observations struct {
 // A missing observation (no baseline side, no patched side, no regression
 // command, no oracles, zero repeats) is INCONCLUSIVE before anything else. A
 // PoC that still fires after the patch is STILL_VULNERABLE: a fire is a
-// definite observation regardless of the other runs. Any unobserved run on
-// either side is INCONCLUSIVE, because it could be a crash, a 500, or an
-// unreachable port, none of which is a fix. New regression failures are
-// REGRESSION_BROKEN. Silence after the patch proves closure only when the PoC
-// fired on every pre-patch run and every post-patch run ended in the declared
-// silent exit.
+// definite observation regardless of the other runs. New regression failures
+// are REGRESSION_BROKEN, a definite observation that therefore outranks an
+// unobserved leg. Any other unobserved run on either side is INCONCLUSIVE,
+// because it could be a crash, a 500, or an unreachable port, none of which is
+// a fix. Silence after the patch proves closure only when the PoC fired on
+// every pre-patch run and every post-patch run ended in the declared silent
+// exit.
 func Decide(obs Observations) Verdict {
 	if len(obs.Oracles) == 0 || !obs.Regression.Present {
 		return Inconclusive
@@ -175,13 +177,13 @@ func Decide(obs Observations) Verdict {
 			return StillVulnerable
 		}
 	}
+	if len(obs.Regression.NewFailures) > 0 {
+		return RegressionBroken
+	}
 	for _, o := range obs.Oracles {
 		if o.PreUnobserved > 0 || o.PostUnobserved > 0 {
 			return Inconclusive
 		}
-	}
-	if len(obs.Regression.NewFailures) > 0 {
-		return RegressionBroken
 	}
 	for _, o := range obs.Oracles {
 		if o.PreFired != o.Repeats {

@@ -84,15 +84,18 @@ func diagnose(ctx context.Context, specPath string) (doctorReport, int) {
 
 	// The pipeline runs every spec command through sh and applies patches with
 	// patch -p1, so these two are the only fatal tool gaps.
+	envFailed := false
 	if path, ok := locate(ctx, "sh"); ok {
 		add("shell", statusOK, path)
 	} else {
 		add("shell", statusFail, "not found on PATH; pocgate runs spec commands through sh")
+		envFailed = true
 	}
 	if path, ok := locate(ctx, "patch"); ok {
 		add("patch", statusOK, path)
 	} else {
 		add("patch", statusFail, "not found on PATH; pocgate verify applies diffs with patch -p1")
+		envFailed = true
 	}
 
 	if _, ok := locate(ctx, "go"); ok {
@@ -115,7 +118,6 @@ func diagnose(ctx context.Context, specPath string) (doctorReport, int) {
 	if sp != nil {
 		port = sp.Target.Service.Port
 	}
-	envFailed := false
 	switch {
 	case port == 0:
 		add("port", statusOK, "no service declared; the PoCs exercise the build")

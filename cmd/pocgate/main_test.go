@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"os"
+	osexec "os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -185,6 +186,73 @@ func TestRunDoctor(t *testing.T) {
 	}
 	if !strings.Contains(stdout.String(), "target.build") {
 		t.Errorf("stdout = %q, want the spec problem to be named", stdout.String())
+	}
+}
+
+// TestRunDoctorMissingPatchExitsInternal is the regression for doctor printing
+// [fail] entries while still exiting 0. A missing patch makes verify unable to
+// apply any diff, so the README's 70 for an unusable environment must hold.
+func TestRunDoctorMissingPatchExitsInternal(t *testing.T) {
+	shPath, err := osexec.LookPath("sh")
+	if err != nil {
+		t.Skip("sh is not installed, so a PATH with sh but without patch cannot be built")
+	}
+
+	dir := t.TempDir()
+	if err := os.Symlink(shPath, filepath.Join(dir, "sh")); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("PATH", dir)
+
+	var stdout, stderr bytes.Buffer
+	code := run(context.Background(), []string{"doctor"}, &stdout, &stderr)
+	if code != exitInternal {
+		t.Fatalf("doctor exit code = %d, want %d (internal)\nstdout: %s\nstderr: %s",
+			code, exitInternal, stdout.String(), stderr.String())
+	}
+	if !strings.Contains(stdout.String(), "[fail]") || !strings.Contains(stdout.String(), "patch") {
+		t.Fatalf("stdout = %q, want the missing patch to be named as a failure", stdout.String())
+	}
+}
+
+// TestRunVerifyJSONBadPatchStillEmitsJSON pins the --json contract: whenever the
+// gate cannot write evidence it still emits the documented error object, even
+// when the input patch itself is the problem (exit 64).
+func TestRunVerifyJSONBadPatchStillEmitsJSON(t *testing.T) {
+	dir := t.TempDir()
+	if err := os.WriteFile(filepath.Join(dir, "poc.sh"), []byte("#!/bin/sh\nexit 0\n"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	specPath := filepath.Join(dir, "pocgate.yaml")
+	if err := os.WriteFile(specPath, []byte(`target:
+  name: fixture
+  build: "true"
+oracles:
+  - id: a
+    poc: poc.sh
+    repeats: 1
+    fired_when:
+      exit: 0
+      silent_exit: 1
+regression:
+  cmd: "true"
+`), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	var stdout, stderr bytes.Buffer
+	code := run(context.Background(), []string{
+		"verify", "--spec", specPath, "--json",
+		"--patch", filepath.Join(dir, "absent.diff"),
+	}, &stdout, &stderr)
+	if code != exitUsage {
+		t.Fatalf("exit code = %d, want %d (usage)\nstderr: %s", code, exitUsage, stderr.String())
+	}
+	if !strings.Contains(stdout.String(), `"verdict":"INCONCLUSIVE"`) {
+		t.Fatalf("stdout = %q, want the documented error JSON", stdout.String())
+	}
+	if !strings.Contains(stdout.String(), `"error"`) {
+		t.Fatalf("stdout = %q, want the error field", stdout.String())
 	}
 }
 
